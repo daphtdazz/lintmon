@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "dirmon"
+version = "0.1.0"
+description = "Framework for monitoring directories and flagging issues (like lint errors)"
+authors = ["David Park <david@greenparksoftware.co.uk>"]
+license = "Apache-2.0"
+
+packages = [
+    { include = "dirmon" }
+]
+
+[tool.poetry.scripts]
+dirmon-status-prompt = "dirmon:status_prompt"
+dirmond = "dirmon:dirmond"
+dirmon-run-all = "dirmon:run_all"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+psutil = ">=5.8.0"
+PyYAML = ">=6.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

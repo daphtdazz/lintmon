@@ -1,0 +1,15 @@
+monitors:
+  black:
+    command: [black, --check, --target-version, py38]
+    file_pattern: .*\.py$
+    problem_line_file_pattern: would reformat (.*)
+    foreground_colour: black
+    background_colour: grey
+  flake8:
+    command: [flake8]
+    file_pattern: .*\.py$
+    foreground_colour: white
+    background_colour: red
+    problem_line_file_pattern: '^\s*\./(.*.py):\d+:\d+: [A-Z]\d+'
+
+
