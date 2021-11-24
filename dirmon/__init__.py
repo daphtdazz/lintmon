@@ -1,19 +1,13 @@
-import atexit
-import io
 import logging
 import os
 import re
 from contextlib import contextmanager
-from queue import SimpleQueue
-from subprocess import Popen, PIPE
-from threading import Thread
 
 import psutil
 
 from .config import load_config_file, BadConfig, load_config_or_exit
-from .monitor_session import MonitorSession
+from .dirmon import Dirmon
 from .settings import CONFIG_FILE, DEFAULT_IGNORED_DIRECTORY_NAMES, PID_FILE, STATE_DIR
-from .utils import lf
 
 
 log = logging.getLogger(__name__)
@@ -32,91 +26,11 @@ def timer(name):
         log.debug('%s took %.3f seonds', name, time.time() - start)
 
 
-class Dirmond:
-
-    @property
-    def badges(self):
-        return ''.join(sess.badge for sess in self.sessions)
-
-    def __init__(self, config):
-        self.config = config
-        self.sessions = []
-        self.fswatch_proc = None
-        self.files_queue = None
-
-    def load_latest_sessions(self):
-        new_sessions = self.new_sessions([])
-        for sess in new_sessions:
-            sess.skip()
-
-        self.sessions = new_sessions
-
-    def start_fswatch(self):
-        excluded_dir_paths_options = [
-            arg
-            for dirpattern in (f'{dname}/' for dname in DEFAULT_IGNORED_DIRECTORY_NAMES)
-            for arg in ['--exclude', dirpattern]
-        ]
-
-        args = ['fswatch', '--extended', *excluded_dir_paths_options, os.curdir]
-        log.debug('Running: %s', ' '.join(args))
-        self.files_queue = SimpleQueue()
-        self.fswatch = Popen(
-            args,
-            stdout=PIPE,
-            stderr=PIPE,
-            encoding='utf8',
-        )
-        atexit.register(self.fswatch.terminate)
-
-        self.reader = Thread(target=self.reader_main)
-        self.reader.start()
-
-    def update_sessions(self, files):
-        new_sessions = self.new_sessions(files)
-        for mp in new_sessions:
-            mp.start()
-        for mp in new_sessions:
-            mp.join()
-            mp.save()
-
-        self.sessions = new_sessions
-
-    def get_next_files(self):
-        # block for the first line
-        lines = [self.files_queue.get()]
-        while not self.files_queue.empty():
-            lines.append(self.files_queue.get())
-
-        return lines
-
-    def new_sessions(self, files):
-        return [
-            MonitorSession(monitor_config, lf(monitor_config.includes_file, files))
-            for monitor_config in self.config.monitors.values()
-        ]
-
-    def reader_main(self):
-        for line in self.fswatch.stdout:
-            line = line.strip()
-            log.debug('Got another line: %s', line)
-            self.files_queue.put(line)
-
-    def run(self):
-        self.start_fswatch()
-
-        while True:
-            next_files = self.get_next_files()
-            log.debug('Got next files %s', next_files)
-            assert len(next_files)
-            self.update_sessions(next_files)
-
-
 def dirmond():
     log.debug('dirmond main')
 
-    dirmond = Dirmond(load_config_or_exit())
-    dirmond.run()
+    dirmon = Dirmon(load_config_or_exit())
+    dirmon.run()
 
 
 def find_all_appropriate_files():
@@ -138,30 +52,18 @@ def run_all():
     log.debug('Run all')
     config = load_config_or_exit()
     files = find_all_appropriate_files()
-    dirmond = Dirmond(config)
-    dirmond.update_sessions(files)
+    dirmon = Dirmon(config)
+    dirmon.update_sessions(files)
 
-    for ms in dirmond.sessions:
+    for ms in dirmon.sessions:
         if len(ms.problem_lines) == 0:
-            print(f'✅ Monitor {ms.config.name} clean')
+            print(f'✅ Monitor {ms} clean')
             continue
 
         coloured = ms.badge
-        print(f'{coloured} Monitor {ms.config.name} output:')
+        print(f'{coloured} Monitor {ms} output:')
         for ol in (pl for pls in ms.problem_lines.values() for pl in pls):
             print(f'  {ol}')
-
-        if any(pf is not None for pf in ms.problem_lines):
-            print(
-                f'{len([pf for pf in ms.problem_lines if pf is not None])} bad files:'
-            )
-            for pf in ms.problem_lines:
-                if pf is None:
-                    continue
-                print(f'  {pf}')
-
-        # temp
-        ms.save()
 
 
 def directory_is_sane():
@@ -217,10 +119,10 @@ def status_prompt():
 
     config = load_config_or_exit()
 
-    dirmond = Dirmond(config)
-    dirmond.load_latest_sessions()
+    dirmon = Dirmon(config)
+    dirmon.load_latest_sessions()
 
-    print(dirmond.badges, end='')
+    print(dirmon.badges, end='')
 
 
 # ensure_dirmon_is_running()

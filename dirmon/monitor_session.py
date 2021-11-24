@@ -45,6 +45,7 @@ class MonitorSession:
             self._read_lines_filepath(self.problem_lines_filepath),
             self.config.extract_file_from_problem_line,
         )
+        log.debug('%s initial problem lines %s', self, self.initial_problem_lines)
 
     def start(self):
         assert self.state == self.States.initial
@@ -79,10 +80,16 @@ class MonitorSession:
         self.process.communicate()
         self.output_file.flush()
         self.output_file.seek(0)
+        olines = self.output_file.readlines()
+        log.debug('%s output lines: %s', self, olines)
         self.problem_lines = gb(
-            (l.strip() for l in self.output_file.readlines()),
+            (line.strip() for line in olines),
             self.config.extract_file_from_problem_line,
         )
+        # make sure we detect removal of problems by setting empty arrays for files that we
+        # processed but didn't get output for
+        for file in self.files:
+            self.problem_lines.setdefault(file, [])
         self.output_file.close()
         self.output_file = None
         self.process = None
@@ -104,6 +111,8 @@ class MonitorSession:
             **self.problem_lines,
         }
 
+        log.debug('%s new_problem_lines_by_file %s', self, new_problem_lines_by_file)
+
         if new_problem_lines_by_file == self.initial_problem_lines:
             log.debug('No change, no need to save %s', self)
             return
@@ -122,12 +131,15 @@ class MonitorSession:
             sorted([k for k in new_problem_lines_by_file.keys() if k is not None]),
         )
 
+    def __str__(self):
+        return self.config.name
+
     def _read_lines_filepath(self, filepath):
         if not os.path.exists(filepath):
             return []
 
         with open(filepath) as file:
-            return [line.strip() for line in file.readlines()]
+            return [self.config.normalize_path(line) for line in file.readlines()]
 
     def _write_lines_filepath(self, filepath, problem_lines):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)

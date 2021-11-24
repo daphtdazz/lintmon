@@ -1,3 +1,7 @@
+[tool.black]
+line-length = 100
+skip-string-normalization = true
+
 [tool.poetry]
 name = "dirmon"
 version = "0.1.0"

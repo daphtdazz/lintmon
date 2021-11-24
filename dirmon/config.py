@@ -2,12 +2,7 @@ import logging
 import os
 import re
 import sys
-from contextlib import contextmanager
-from multiprocessing import Process
-from subprocess import Popen
-from time import sleep
 
-import psutil
 import yaml
 
 from .settings import CONFIG_FILE
@@ -25,8 +20,7 @@ def normalize_key_value(key, value):
 
 def dict_to_kwarg_str(dct):
     return ', '.join(
-        f'{key}={value!r}'
-        for key, value in (normalize_key_value(*kv) for kv in dct.items())
+        f'{key}={value!r}' for key, value in (normalize_key_value(*kv) for kv in dct.items())
     )
 
 
@@ -68,6 +62,24 @@ class BadConfig(ValueError):
 
 
 class ConfigObject:
+    @staticmethod
+    def normalize_path(path: str):
+        path = os.path.normpath(path.strip())
+
+        if os.path.isabs(path):
+            cwd = os.getcwd()
+            if os.path.commonpath([path, cwd]) != cwd:
+                # this path is not in our directory
+                return None
+
+            return os.path.relpath(path)
+
+        if path.split(os.sep)[0] == os.pardir:
+            # this file is not in our directory
+            return None
+
+        return path
+
     def _check_and_init_pattern(self, attr, pattern):
         assert attr.endswith('pattern')
 
@@ -105,9 +117,7 @@ class MonitorConfig(ConfigObject):
             or len(command) == 0
             or any(not isinstance(command_arg, str) for command_arg in command)
         ):
-            raise BadConfig(
-                'command must be a non-empty list of the command and its arguments'
-            )
+            raise BadConfig('command must be a non-empty list of the command and its arguments')
 
         self.command = command
 
@@ -115,22 +125,20 @@ class MonitorConfig(ConfigObject):
             raise BadConfig('file_pattern must be a valid regular expression')
 
         self._check_and_init_pattern('file_pattern', file_pattern)
-        self._check_and_init_pattern(
-            'problem_line_file_pattern', problem_line_file_pattern
-        )
+        self._check_and_init_pattern('problem_line_file_pattern', problem_line_file_pattern)
 
         if foreground_colour is not None:
             try:
                 colour_text('', foreground=foreground_colour)
             except KeyError:
-                raise BadConfig(f'Unknown foreground color')
+                raise BadConfig('Unknown foreground color')
         self.foreground_colour = foreground_colour
 
         if background_colour is not None:
             try:
                 colour_text('', background=background_colour)
             except KeyError:
-                raise BadConfig(f'Unknown background color')
+                raise BadConfig('Unknown background color')
         self.background_colour = background_colour
 
     def includes_file(self, filepath):
@@ -146,11 +154,13 @@ class MonitorConfig(ConfigObject):
             return None
 
         try:
-            return os.path.normpath(mo.group(1).strip())
+            return self.normalize_path(mo.group(1))
         except IndexError:
             return None
 
     def badge_for_number(self, number):
+        if number == 0:
+            return ''
         kwargs = {}
         if self.foreground_colour is not None:
             kwargs['foreground'] = self.foreground_colour
@@ -209,7 +219,7 @@ def clean_config(config):
 def load_config_file(config_file):
     log.debug('Load config')
     if not os.path.exists(config_file):
-        raise BadConfig(f'No such config file')
+        raise BadConfig('No such config file')
 
     with open(config_file, "r") as stream:
         try:

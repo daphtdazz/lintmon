@@ -10,6 +10,6 @@ monitors:
     file_pattern: .*\.py$
     foreground_colour: white
     background_colour: red
-    problem_line_file_pattern: '^\s*\./(.*.py):\d+:\d+: [A-Z]\d+'
+    problem_line_file_pattern: '^\s*(.*\.py):\d+:\d+: [A-Z]\d+'
 
 

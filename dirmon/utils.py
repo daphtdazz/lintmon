@@ -5,5 +5,8 @@ def lf(func, iter_):
 def gb(iter_, func):
     dct = {}
     for thing in iter_:
-        dct.setdefault(func(thing), []).append(thing)
+        key = func(thing)
+        if key is None:
+            continue
+        dct.setdefault(key, []).append(thing)
     return dct
