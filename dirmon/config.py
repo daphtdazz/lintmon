@@ -6,6 +6,7 @@ import sys
 import yaml
 
 from .settings import CONFIG_FILE
+from .utils import colour_text
 
 
 log = logging.getLogger(__name__)
@@ -22,39 +23,6 @@ def dict_to_kwarg_str(dct):
     return ', '.join(
         f'{key}={value!r}' for key, value in (normalize_key_value(*kv) for kv in dct.items())
     )
-
-
-def colour_text(text, foreground='white', background='black'):
-    foreground_colours = {
-        'black': '30',
-        'red': '31',
-        'green': '32',
-        'yellow': '33',
-        'blue': '34',
-        'pink': '35',
-        'cyan': '36',
-        'grey': '37',
-        'gray': '37',
-        'white': '38',
-    }
-    background_colours = {
-        'black': '40',
-        'red': '41',
-        'green': '42',
-        'yellow': '43',
-        'blue': '44',
-        'pink': '45',
-        'cyan': '46',
-        'grey': '47',
-        'gray': '47',
-    }
-
-    fg = foreground_colours[foreground]
-    bg = background_colours[background]
-
-    return f'\x1b[{fg}m\x1b[{bg}m{text}\x1b[0m'
-
-    # $'\x1b[47m\x1b[30m'
 
 
 class BadConfig(ValueError):

@@ -2,6 +2,7 @@ import atexit
 import logging
 import os
 from queue import SimpleQueue
+from signal import SIGTERM
 from subprocess import Popen, PIPE
 from threading import Thread
 
@@ -39,18 +40,20 @@ class Dirmon:
         ]
 
         args = ['fswatch', '--extended', *excluded_dir_paths_options, os.curdir]
-        log.debug('Running: %s', ' '.join(args))
+        log.info('Starting fswatch')
+        log.debug('Args: %s', args)
         self.files_queue = SimpleQueue()
-        self.fswatch = Popen(
-            args,
-            stdout=PIPE,
-            stderr=PIPE,
-            encoding='utf8',
-        )
+        self.fswatch = Popen(args, stdout=PIPE, stderr=PIPE, encoding='utf8',)
         atexit.register(self.fswatch.terminate)
 
+        # non-daemon thread doesn't need to be joined or terminated: will exit when main thread
+        # exits
         self.reader = Thread(target=self.reader_main)
         self.reader.start()
+
+    def stop_fswatch(self):
+        log.debug('Stopping fswatch')
+        self.fswatch.terminate()
 
     def update_sessions(self, files):
         new_sessions = self.new_sessions(files)
@@ -82,12 +85,22 @@ class Dirmon:
             log.debug('Got another path: %s', line)
             self.files_queue.put(line)
 
+        log.debug('fswatch stdout closed, killing self')
+        os.kill(os.getpid(), SIGTERM)
+
     def run(self):
+        # Doesn't return
         self.start_fswatch()
 
-        while True:
-            next_files = self.get_next_files()
-            log.debug('Got next files %s', next_files)
-            assert len(next_files)
-            self.update_sessions(next_files)
-            print(self.badges)
+        try:
+            while True:
+                next_files = self.get_next_files()
+                assert len(next_files)
+                log.info('Files changed:')
+                for file in next_files:
+                    log.info(f'  {file}')
+                self.update_sessions(next_files)
+        except BaseException as exc:
+            log.debug('Exiting due to exception %s', exc)
+            self.stop_fswatch()
+            raise

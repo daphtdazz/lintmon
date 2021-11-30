@@ -4,7 +4,7 @@ from subprocess import Popen
 from tempfile import TemporaryFile
 
 from .settings import STATE_DIR
-from .utils import gb
+from .utils import diff_problem_lines, gb
 
 
 log = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class MonitorSession:
                 stderr=self.output_file,
             )
         except Exception as exc:
-            self.problem_lines = [str(exc).replace('\n', ' ')]
+            self.problem_lines = {'.': [str(exc).replace('\n', ' ')]}
             # self.problem_files = []
             self.process = None
 
@@ -83,8 +83,7 @@ class MonitorSession:
         olines = self.output_file.readlines()
         log.debug('%s output lines: %s', self, olines)
         self.problem_lines = gb(
-            (line.strip() for line in olines),
-            self.config.extract_file_from_problem_line,
+            (line.strip() for line in olines), self.config.extract_file_from_problem_line,
         )
         # make sure we detect removal of problems by setting empty arrays for files that we
         # processed but didn't get output for
@@ -113,9 +112,17 @@ class MonitorSession:
 
         log.debug('%s new_problem_lines_by_file %s', self, new_problem_lines_by_file)
 
-        if new_problem_lines_by_file == self.initial_problem_lines:
+        problem_line_diff = diff_problem_lines(
+            self.initial_problem_lines, new_problem_lines_by_file
+        )
+
+        if len(problem_line_diff) == 0:
             log.debug('No change, no need to save %s', self)
             return
+
+        log.info('Changes in %s:', self)
+        for diff_entry in problem_line_diff:
+            log.info('  %s %s', diff_entry[0], diff_entry[2])
 
         expanded_sorted_lines = [
             line
