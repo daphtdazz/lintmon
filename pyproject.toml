@@ -3,12 +3,12 @@ line-length = 100
 skip-string-normalization = true
 
 [tool.poetry]
-name = "dirmon"
+name = "lintmon"
 version = "0.1.0"
-description = "Monitor project files in the background and flag issues in your prompt"
+description = "Monitor project files in the background for lint issues and flag issues in your prompt"
 authors = ["David Park <david@greenparksoftware.co.uk>"]
 license = "Apache-2.0"
-repository = "https://github.com/daphtdazz/dirmon"
+repository = "https://github.com/daphtdazz/lintmon"
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,16 +17,16 @@ classifiers = [
 ]
 
 packages = [
-    { include = "dirmon" }
+    { include = "lintmon" }
 ]
 
 [tool.poetry.scripts]
-dirmon-status = "dirmon:status"
-dirmon-start = "dirmon:start"
-dirmon-stop = "dirmon:stop"
-dirmon-run-all = "dirmon:run_all"
-dirmon-status-prompt = "dirmon:status_prompt"
-dirmond = "dirmon:dirmond"
+lintmon-status = "lintmon:status"
+lintmon-start = "lintmon:start"
+lintmon-stop = "lintmon:stop"
+lintmon-run-all = "lintmon:run_all"
+lintmon-status-prompt = "lintmon:status_prompt"
+lintmond = "lintmon:lintmond"
 
 [tool.poetry.dependencies]
 python = ">=3.8"

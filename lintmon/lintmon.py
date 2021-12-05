@@ -10,11 +10,10 @@ from .monitor_session import MonitorSession
 from .settings import DEFAULT_IGNORED_DIRECTORY_NAMES
 from .utils import lf
 
-
 log = logging.getLogger(__name__)
 
 
-class Dirmon:
+class Lintmon:
     @property
     def badges(self):
         return ''.join(sess.badge for sess in self.sessions)

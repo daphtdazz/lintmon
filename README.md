@@ -1,6 +1,8 @@
-# dirmon
+# lintmon
 
-A **dir**ectory **mon**itor. Provides a configurable way to specify checks to run on code in a given directory when it changes on disk, run those checks in the background and provide a fast way to display the outcome of the latest checks with a concise format suitable for embedding in your prompt.
+A tool for monitoring for lint errors. Provides a configurable way to specify checks to run on code in a given directory when it changes on disk, run those checks in the background and provide a fast way to display the outcome of the latest checks with a concise format suitable for embedding in your prompt.
+
+It is designed for lint errors because these are quick to run and affect single files at a time, so in general they can be checked in the background with relatively low system impact, but in principle you could use it to trigger any sort of validation check, such as running unit tests.
 
 ## Motivation
 
@@ -15,37 +17,37 @@ This is that.
 
 ## Configure
 
-Install dirmon using `pip` in your virtualenv (or wherever you install packages for use with your codebase):
+Install lintmon using `pip` in your virtualenv (or wherever you install packages for use with your codebase):
 
-    pip install dirmon
+    pip install lintmon
 
-Add a file like the dirmon.yaml file in this codebase to the root directory of your codebase. It tells dirmmon what checks to do on files. It aims to be very configurable.
+Add a file like the lintmon.yaml file in this codebase to the root directory of your codebase. It tells dirmmon what checks to do on files. It aims to be very configurable.
 
 Add the following to your prompt in your `.bashrc` or `.zshrc`:
 
-    PS1='$([[ -e dirmon.yaml ]] && which dirmon-status-prompt >/dev/null && dirmon-status-prompt)'$PS1
+    PS1='$([[ -e lintmon.yaml ]] && which lintmon-status-prompt >/dev/null && lintmon-status-prompt)'$PS1
 
-That's it! `dirmon-status-prompt` will start `dirmond` automatically in the background when it is run, and from now on you should get a "badge" in your prompt when there are lint errors in your directory, which will be updated when you modify files.
+That's it! `lintmon-status-prompt` will start `lintmond` automatically in the background when it is run, and from now on you should get a "badge" in your prompt when there are lint errors in your directory, which will be updated when you modify files.
 
 ## Commands
 
-### `dirmon-status`
+### `lintmon-status`
 
-Output status of dirmon along with all current errors from the linters.
+Output status of lintmon along with all current errors from the linters.
 
-### `dirmon-stop`, `dirmon-start`
+### `lintmon-stop`, `lintmon-start`
 
-Tell dirmon to stop (and not restart automatically) or start again. Mostly useful for debugging dirmon. This will display an ` S ` badge in your prompt to tell you it is stopped.
+Tell lintmon to stop (and not restart automatically) or start again. Mostly useful for debugging lintmon. This will display an ` S ` badge in your prompt to tell you it is stopped.
 
-### `dirmon-run-all`
+### `lintmon-run-all`
 
-Run all linters on all appropriate files in your project, thus "hydrating" dirmon's state if it hasn't been running for a while and changes have been made.
+Run all linters on all appropriate files in your project, thus "hydrating" lintmon's state if it hasn't been running for a while and changes have been made.
 
-### `dirmond`
+### `lintmond`
 
 Run the daemon in the shell (again mainly useful for debugging).
 
 
 ## Directory structure
 
-dirmon adds a `.dirmon` directory to your project directory where it stores all its state about what current errors there are, dirmon's pid etc. You will probably want to add this to your .gitignore.
+lintmon adds a `.lintmon` directory to your project directory where it stores all its state about what current errors there are, lintmon's pid etc. You will probably want to add this to your .gitignore.

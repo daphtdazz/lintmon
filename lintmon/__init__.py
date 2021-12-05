@@ -10,7 +10,7 @@ from typing import Optional
 import psutil
 
 from .config import load_config_file, BadConfig, load_config_or_exit
-from .dirmon import Dirmon
+from .lintmon import Lintmon
 from .settings import (
     CONFIG_FILE,
     DEFAULT_IGNORED_DIRECTORY_NAMES,
@@ -35,7 +35,7 @@ LOGGING = {
         'file': {
             'level': logging.INFO,
             'class': 'logging.FileHandler',
-            'filename': '.dirmon/output.log',
+            'filename': '.lintmon/output.log',
             'formatter': 'file',
         },
         'null': {'class': 'logging.NullHandler'},
@@ -55,40 +55,40 @@ log = logging.getLogger()
 # --------------------------------------------------------------------------------------------------
 # Entry points
 # --------------------------------------------------------------------------------------------------
-def dirmond():
+def lintmond():
     # if '--quiet' in sys.argv:
     #     root_logger = logging.getLogger()
     #     console_handler = first(h for h in root_logger.handlers if h.name == 'console')
     #     root_logger.removeHandler(console_handler)
 
-    log.debug('dirmond main')
+    log.debug('lintmond main')
 
-    dirmon = Dirmon(load_config_or_exit())
-    dirmon.run()
+    lintmon = Lintmon(load_config_or_exit())
+    lintmon.run()
 
 
 def run_all():
     log.debug('Run all')
     config = load_config_or_exit()
     files = find_all_appropriate_files()
-    dirmon = Dirmon(config)
-    dirmon.update_sessions(files)
+    lintmon = Lintmon(config)
+    lintmon.update_sessions(files)
 
-    print_sessions(dirmon.sessions)
+    print_sessions(lintmon.sessions)
 
 
 def status():
     if not is_here():
-        print('No dirmon.yaml in this directory')
+        print('No lintmon.yaml in this directory')
         return
 
     if is_stopped():
-        print('🛑 dirmon is stopped')
+        print('🛑 lintmon is stopped')
     else:
-        if not dirmon_is_running():
-            print('⚠️ dirmon is not running')
+        if not lintmon_is_running():
+            print('⚠️ lintmon is not running')
         else:
-            print(f'✅ dirmon running pid {dirmon_pid()}')
+            print(f'✅ lintmon running pid {lintmon_pid()}')
     try:
         config = load_config_file(CONFIG_FILE)
     except BadConfig as exc:
@@ -99,10 +99,10 @@ def status():
 
     config = load_config_or_exit()
 
-    dirmon = Dirmon(config)
-    dirmon.load_latest_sessions()
+    lintmon = Lintmon(config)
+    lintmon.load_latest_sessions()
 
-    print_sessions(dirmon.sessions)
+    print_sessions(lintmon.sessions)
 
 
 def status_prompt():
@@ -115,7 +115,7 @@ def status_prompt():
         print(colour_text(' S ', background='red', foreground='white'), end='')
         return
 
-    ensure_dirmon_is_running()
+    ensure_lintmon_is_running()
 
     try:
         config = load_config_file(CONFIG_FILE)
@@ -127,10 +127,10 @@ def status_prompt():
 
     config = load_config_or_exit()
 
-    dirmon = Dirmon(config)
-    dirmon.load_latest_sessions()
+    lintmon = Lintmon(config)
+    lintmon.load_latest_sessions()
 
-    print(dirmon.badges, end='')
+    print(lintmon.badges, end='')
     log.debug('status_prompt finished')
 
 
@@ -138,7 +138,7 @@ def start():
     if is_stopped():
         os.remove(STOP_FILE)
 
-    ensure_dirmon_is_running()
+    ensure_lintmon_is_running()
 
 
 def stop():
@@ -146,7 +146,7 @@ def stop():
         with open(STOP_FILE, 'w'):
             pass
 
-    pid = dirmon_pid()
+    pid = lintmon_pid()
     if pid is None:
         print('Not running')
         return
@@ -157,7 +157,7 @@ def stop():
     print(f'Waiting up to {STOP_WAIT_SECONDS} for termination...')
     start = time()
     while time() < start + STOP_WAIT_SECONDS:
-        if not dirmon_is_running():
+        if not lintmon_is_running():
             print('Terminated')
             return
 
@@ -192,7 +192,7 @@ def is_stopped():
     return os.path.exists(STOP_FILE)
 
 
-def dirmon_pid() -> Optional[int]:
+def lintmon_pid() -> Optional[int]:
     if not os.path.exists(PID_FILE):
         log.debug('no pid file %s', PID_FILE)
         return None
@@ -215,8 +215,8 @@ def dirmon_pid() -> Optional[int]:
     return pid
 
 
-def dirmon_is_running():
-    return dirmon_pid() is not None
+def lintmon_is_running():
+    return lintmon_pid() is not None
 
 
 def print_sessions(sessions):
@@ -231,18 +231,18 @@ def print_sessions(sessions):
             print(f'  {ol}')
 
 
-def run_dirmond():
-    print('Starting dirmond...')
-    proc = Popen(['dirmond', '--quiet'], stdin=DEVNULL, stderr=DEVNULL, stdout=DEVNULL)
-    log.debug('dirmond running %s', proc.pid)
+def run_lintmond():
+    print('Starting lintmond...')
+    proc = Popen(['lintmond', '--quiet'], stdin=DEVNULL, stderr=DEVNULL, stdout=DEVNULL)
+    log.debug('lintmond running %s', proc.pid)
 
     with open(PID_FILE, 'w') as pf:
         pf.write(str(proc.pid))
 
 
-def ensure_dirmon_is_running():
-    if dirmon_is_running():
-        log.info('dirmon running')
+def ensure_lintmon_is_running():
+    if lintmon_is_running():
+        log.info('lintmon running')
         return
 
-    run_dirmond()
+    run_lintmond()
