@@ -21,7 +21,7 @@ Install lintmon using `pip` in your virtualenv (or wherever you install packages
 
     pip install lintmon
 
-Add a file like the lintmon.yaml file in this codebase to the root directory of your codebase. It tells dirmmon what checks to do on files. It aims to be very configurable.
+Add a file like the lintmon.yaml file in this codebase to the root directory of your codebase. It tells lintmon what checks to do on files. It aims to be very configurable.
 
 Add the following to your prompt in your `.bashrc` or `.zshrc`:
 
