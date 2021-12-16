@@ -29,10 +29,6 @@ class MonitorSession:
     def problem_lines_filepath(self):
         return os.path.join(self.dirpath, 'problem_lines')
 
-    @property
-    def problem_files_filepath(self):
-        return os.path.join(self.dirpath, 'problem_files')
-
     def __init__(self, config, files):
         self.state = self.States.initial
         self.config = config
@@ -54,18 +50,23 @@ class MonitorSession:
             self.skip()
             return
 
+        files = [f for f in self.files if os.path.exists(f)]
+
+        if len(files) == 0:
+            # all files were deleted, so mark as clear
+            self.problem_lines = {f: [] for f in self.files}
+            self.state = self.States.complete
+            return
+
         self.state = self.States.running
-        log.debug('Starting %s on %d files', self.config.command, len(self.files))
+        log.debug('Starting %s on %d files', self.config.command, len(files))
         self.output_file = TemporaryFile(mode='w+')
         try:
             self.process = Popen(
-                [*self.config.command, *self.files],
-                stdout=self.output_file,
-                stderr=self.output_file,
+                [*self.config.command, *files], stdout=self.output_file, stderr=self.output_file,
             )
         except Exception as exc:
             self.problem_lines = {'.': [str(exc).replace('\n', ' ')]}
-            # self.problem_files = []
             self.process = None
 
     def join(self):
@@ -133,10 +134,6 @@ class MonitorSession:
         ]
 
         self._write_lines_filepath(self.problem_lines_filepath, expanded_sorted_lines)
-        self._write_lines_filepath(
-            self.problem_files_filepath,
-            sorted([k for k in new_problem_lines_by_file.keys() if k is not None]),
-        )
 
     def __str__(self):
         return self.config.name

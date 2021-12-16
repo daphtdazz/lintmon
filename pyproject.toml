@@ -4,7 +4,7 @@ skip-string-normalization = true
 
 [tool.poetry]
 name = "lintmon"
-version = "0.1.0"
+version = "0.1.1"
 description = "Monitor project files in the background for lint issues and flag issues in your prompt"
 authors = ["David Park <david@greenparksoftware.co.uk>"]
 license = "Apache-2.0"
